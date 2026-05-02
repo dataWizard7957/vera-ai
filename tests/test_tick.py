@@ -1,0 +1,1 @@
+def test_tick(): assert True
