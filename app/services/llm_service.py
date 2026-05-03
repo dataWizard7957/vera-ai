@@ -24,8 +24,8 @@ def generate(prompt: str) -> str:
                 "content": prompt
             }
         ],
-        temperature=0.2,
-        max_tokens=300
+        temperature=0.3,
+        max_tokens=250
     )
 
     return response.choices[0].message.content
