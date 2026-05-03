@@ -10,7 +10,12 @@ router = APIRouter()
 async def reply(payload: dict):
 
     merchant_id = payload.get("merchant_id")
+    conversation_id = payload.get("conversation_id")
 
-    logger.info(f"Reply received for merchant: {merchant_id}")
+    logger.info(
+        f"Reply received | merchant={merchant_id} | conversation={conversation_id}"
+    )
 
-    return handle_reply(payload)
+    response = handle_reply(payload)
+
+    return response
