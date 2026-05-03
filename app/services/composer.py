@@ -1,5 +1,6 @@
 import json
 import time
+
 from app.services.prompt_builder import build_prompt
 from app.services.llm_service import generate
 from app.services.validator import validate_response
@@ -15,6 +16,13 @@ from app.services.cta_selector import (
     enforce_cta_diversity
 )
 
+from app.services.message_metadata import (
+    build_conversation_id,
+    build_suppression_key,
+    build_template_name,
+    build_template_params
+)
+
 from app.utils.logger import logger
 
 
@@ -24,9 +32,7 @@ FALLBACK_MESSAGE = {
         "A simple recall campaign may help improve repeat visits. "
         "Want me to draft it?"
     ),
-    "cta": "Reply YES",
-    "send_as": "whatsapp",
-    "suppression_key": "fallback_message",
+    "cta": "open_ended",
     "rationale": (
         "Fallback response due to generation failure."
     )
@@ -34,20 +40,23 @@ FALLBACK_MESSAGE = {
 
 
 def compose_message(context: dict):
+
     start_time = time.time()
+
     prompt = build_prompt(context)
 
     best_message = None
     best_score = -999
 
     # Multi-candidate generation
-    
     for _ in range(1):
+
         generation_start = time.time()
 
         try:
 
             raw_output = generate(prompt)
+
             logger.info(
                 f"Generation took: "
                 f"{time.time() - generation_start:.2f}s"
@@ -76,8 +85,6 @@ def compose_message(context: dict):
         required_fields = [
             "body",
             "cta",
-            "send_as",
-            "suppression_key",
             "rationale"
         ]
 
@@ -145,9 +152,66 @@ def compose_message(context: dict):
         formatted
     )
 
-    logger.info(
-    f"Total compose_message time: "
-    f"{time.time() - start_time:.2f}s"
-)
+    # =========================
+    # Backend-generated fields
+    # =========================
 
-    return validated
+    merchant_id = context.get(
+        "merchant_id",
+        "unknown_merchant"
+    )
+
+    customer_id = context.get(
+        "customer_id"
+    )
+
+    trigger_id = (
+        context.get("trigger_id")
+        or "unknown_trigger"
+    )
+
+    suppression_key = build_suppression_key(
+        trigger_id,
+        merchant_id,
+        customer_id
+    )
+
+    template_name = build_template_name(
+        trigger_id
+    )
+
+    template_params = build_template_params(
+        context
+    )
+
+    conversation_id = build_conversation_id(
+        merchant_id,
+        trigger_id
+    )
+
+    send_as = (
+        "merchant_on_behalf"
+        if customer_id
+        else "vera"
+    )
+
+    final_message = {
+        "conversation_id": conversation_id,
+        "merchant_id": merchant_id,
+        "customer_id": customer_id,
+        "trigger_id": trigger_id,
+        "template_name": template_name,
+        "template_params": template_params,
+        "body": validated["body"],
+        "cta": validated["cta"],
+        "send_as": send_as,
+        "suppression_key": suppression_key,
+        "rationale": validated["rationale"]
+    }
+
+    logger.info(
+        f"Total compose_message time: "
+        f"{time.time() - start_time:.2f}s"
+    )
+
+    return final_message
