@@ -12,9 +12,9 @@ from app.utils.logger import logger
 
 def handle_reply(payload: dict):
 
-
     merchant_id = payload.get("merchant_id")
     logger.info(f"Processing reply for merchant: {merchant_id}")
+
     text = payload.get("message", "")
 
     state = get_conversation_state(merchant_id)
@@ -23,7 +23,8 @@ def handle_reply(payload: dict):
     if state["conversation_ended"]:
 
         return {
-            "action": "end"
+            "action": "end",
+            "rationale": "Conversation already closed."
         }
 
     # Hostile user
@@ -39,7 +40,7 @@ def handle_reply(payload: dict):
 
         return {
             "action": "end",
-            "reason": "hostile_user"
+            "rationale": "Merchant requested to stop messaging."
         }
 
     # Auto reply handling
@@ -66,12 +67,13 @@ def handle_reply(payload: dict):
 
             return {
                 "action": "end",
-                "reason": "repeated_auto_reply"
+                "rationale": "Repeated auto replies detected."
             }
 
         return {
             "action": "wait",
-            "reason": "auto_reply_detected"
+            "wait_seconds": 14400,
+            "rationale": "Detected business auto reply."
         }
 
     # Merchant interested
@@ -86,20 +88,18 @@ def handle_reply(payload: dict):
 
         return {
             "action": "send",
-            "message": {
-                "body": (
-                    "Great — I can prepare that campaign draft for you today."
-                ),
-                "cta": "Reply CONFIRM",
-                "send_as": "whatsapp",
-                "suppression_key": "campaign_confirmation",
-                "rationale": (
-                    "Merchant showed clear execution intent."
-                )
-            }
+            "body": (
+                "Great — I can prepare that campaign draft for you today."
+            ),
+            "cta": "binary_confirm_cancel",
+            "rationale": (
+                "Merchant showed clear execution intent."
+            )
         }
 
     # Neutral response
     return {
-        "action": "wait"
+        "action": "wait",
+        "wait_seconds": 3600,
+        "rationale": "Waiting for clearer merchant intent."
     }
