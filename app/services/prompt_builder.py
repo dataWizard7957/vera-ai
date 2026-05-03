@@ -131,8 +131,6 @@ Return ONLY valid JSON. No markdown, no backticks, no text before or after the J
 {{
   "body": "The message text. MUST use Proper Case for names and location and standard sentence capitalization.",
   "cta": "The call to action string.",
-  "send_as": "whatsapp",
-  "suppression_key": "Unique key for tracking",
   "rationale": "Brief logic for this message"
 }}
 
