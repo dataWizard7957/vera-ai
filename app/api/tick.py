@@ -26,15 +26,14 @@ async def tick(payload: dict):
     if state["conversation_ended"]:
 
         return {
-            "action": "end"
+            "actions": []
         }
 
     # Prevent excessive messaging
     if state["messages_sent"] >= 3:
 
         return {
-            "action": "wait",
-            "reason": "message_limit_reached"
+            "actions": []
         }
 
     # Generate message
@@ -47,8 +46,7 @@ async def tick(payload: dict):
     ):
 
         return {
-            "action": "wait",
-            "reason": "duplicate_message_detected"
+            "actions": []
         }
 
     # Prevent duplicate suppression campaigns
@@ -58,8 +56,7 @@ async def tick(payload: dict):
     ):
 
         return {
-            "action": "wait",
-            "reason": "duplicate_suppression_key"
+            "actions": []
         }
 
     # Save sent message history
@@ -86,6 +83,7 @@ async def tick(payload: dict):
     )
 
     return {
-        "action": "send",
-        "message": message
+        "actions": [
+            message
+        ]
     }
